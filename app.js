@@ -603,11 +603,11 @@
   async function reconcileWithRemote({ forcePull = false } = {}) {
     if (state.syncing) {
       state.syncQueued = true;
-      return;
+      return false;
     }
     const token = getToken();
     const passphrase = getPassphrase();
-    if (!token || !passphrase || !navigator.onLine) return;
+    if (!token || !passphrase || !navigator.onLine) return false;
 
     state.syncing = true;
     setSyncState("syncing", "Sincronizzazione…");
@@ -653,10 +653,12 @@
         }
       }
       setSyncState("ok", "Sincronizzato", "Sincronizzazione completata.");
+      return true;
     } catch (error) {
       console.error(error);
       const wrongPassword = error?.name === "OperationError";
       setSyncState("error", "Errore GitHub", wrongPassword ? "Password di cifratura errata." : (error.message || "Sincronizzazione non riuscita."), true);
+      return false;
     } finally {
       state.syncing = false;
       if (state.syncQueued) {
@@ -687,7 +689,8 @@
       const response = await fetch(GITHUB_API, { headers: apiHeaders(token), cache: "no-store" });
       if (!response.ok) throw new Error("Token non valido o senza accesso al repository.");
       setCredentials(token, passphrase, remember);
-      await reconcileWithRemote();
+      const synced = await reconcileWithRemote();
+      if (!synced) return;
       closeDialog("syncDialog");
       showToast("GitHub collegato correttamente");
     } catch (error) {
@@ -899,8 +902,8 @@
         showSyncMessage("Collega prima GitHub.", true);
         return;
       }
-      await reconcileWithRemote({ forcePull: true });
-      showToast("Dati scaricati da GitHub");
+      const pulled = await reconcileWithRemote({ forcePull: true });
+      if (pulled) showToast("Dati scaricati da GitHub");
     });
 
     const updateConnection = () => {
