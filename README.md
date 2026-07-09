@@ -1,12 +1,21 @@
 # TrackPack
 
-Applicazione mobile-first per salvare e gestire i codici tracking dei pacchi.
+Applicazione mobile-first per gestire i codici tracking dei pacchi.
 
-- Funziona senza account, database o server
-- Salva i dati nel browser del dispositivo
-- Supporta ricerca, filtri, ordinamento, archivio e stato manuale
-- Include INPOST e precarica il codice `827049017600018049468336`
-- Apre il sito ufficiale del corriere quando disponibile
-- Può funzionare offline dopo il primo caricamento
+## Struttura
 
-La cartella `site` contiene l’app pronta per GitHub Pages. Il deploy avviene automaticamente dal workflow `.github/workflows/deploy-pages.yml`.
+- Il sito pubblico è pubblicato dal branch `gh-pages`.
+- L’app è composta da una sola versione: `index.html`, `app.css`, `app.js`, `manifest.json` e `icon.svg`.
+- Non usa più service worker o script di correzione sovrapposti, evitando cache obsolete e cicli di ricaricamento.
+- I dati sincronizzati vengono salvati cifrati in `data/packages.enc.json` sul branch `main`.
+
+## Funzioni
+
+- Stati semplificati: **In attesa** e **Consegnato**.
+- Aggiunta, ricerca, rinomina, archiviazione ed eliminazione dei pacchi.
+- Tracking INPOST visualizzato direttamente nell’app.
+- Aggiornamento automatico INPOST quando la spedizione risulta consegnata.
+- Sincronizzazione cifrata con GitHub tramite token fine-grained.
+- Compatibilità con il precedente formato cifrato, così i dati già salvati non vengono persi.
+
+Sito: https://lori2003.github.io/TrackPack/
