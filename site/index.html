@@ -8,10 +8,21 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="TrackPack">
-  <link rel="manifest" href="./manifest.json">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <link rel="manifest" href="./manifest.json?v=6">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./icon.svg">
-  <link rel="stylesheet" href="./app.css">
+  <link rel="stylesheet" href="./app.css?v=6">
+  <style>
+    #githubSyncFab{
+      position:fixed;left:16px;bottom:calc(22px + env(safe-area-inset-bottom));z-index:1000;
+      min-height:48px;max-width:calc(100vw - 92px);border:1px solid #d4d4d8;border-radius:999px;
+      padding:0 16px;background:#fff;color:#18181b;font:700 13px/1 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      box-shadow:0 10px 28px rgba(0,0,0,.16);display:block!important;visibility:visible!important;opacity:1!important
+    }
+  </style>
   <title>TrackPack</title>
 </head>
 <body>
@@ -55,39 +66,32 @@
     </section>
 
     <nav class="filters" id="statusFilters" aria-label="Filtra per stato"></nav>
-
     <section id="packageList" class="package-list" aria-live="polite"></section>
   </main>
 
+  <button id="githubSyncFab" type="button" aria-label="Configura il salvataggio su GitHub">☁ Salva su GitHub</button>
   <button class="fab" id="openAddDialog" type="button">＋ <span>Aggiungi pacco</span></button>
 
   <dialog id="addDialog" class="modal">
     <form id="addForm" method="dialog">
       <div class="modal-head">
-        <div>
-          <h2>Nuovo pacco</h2>
-          <p>Inserisci i dati del pacco da seguire.</p>
-        </div>
+        <div><h2>Nuovo pacco</h2><p>Inserisci i dati del pacco da seguire.</p></div>
         <button class="icon-button" type="button" data-close="addDialog" aria-label="Chiudi">×</button>
       </div>
-
       <label class="field">
         <span>Codice tracking <b>*</b></span>
         <input id="trackingCode" name="trackingCode" maxlength="100" placeholder="Es. 827049017600018049468336" autocomplete="off" required>
         <small>I codici numerici di 24 cifre vengono riconosciuti automaticamente come INPOST.</small>
       </label>
-
       <fieldset class="field">
         <legend>Corriere <b>*</b></legend>
         <div class="carrier-grid" id="carrierGrid"></div>
         <input type="hidden" id="carrier" name="carrier" required>
       </fieldset>
-
       <label class="field">
         <span>Descrizione <em>(opzionale)</em></span>
         <input id="description" name="description" maxlength="255" placeholder="Es. Ordine abbigliamento">
       </label>
-
       <details class="advanced">
         <summary>Dettagli avanzati</summary>
         <div class="advanced-grid">
@@ -96,7 +100,6 @@
           <label class="field"><span>Consegna stimata</span><input id="estimatedDelivery" name="estimatedDelivery" type="date"></label>
         </div>
       </details>
-
       <p class="form-error hidden" id="formError" role="alert"></p>
       <div class="modal-actions">
         <button class="button secondary" type="button" data-close="addDialog">Annulla</button>
@@ -139,11 +142,11 @@
     <div class="empty-state"><div aria-hidden="true">▣</div><h2>Nessun pacco</h2><p></p></div>
   </template>
 
-  <script src="./app.js" defer></script>
-  <script src="./inpost-tracking.js" defer></script>
-  <script src="./ui-fixes.js" defer></script>
-  <script src="./two-statuses.js" defer></script>
-  <script src="./github-sync.js" defer></script>
-  <script src="./sync-button-fix.js" defer></script>
+  <script src="./app.js?v=6" defer></script>
+  <script src="./inpost-tracking.js?v=6" defer></script>
+  <script src="./ui-fixes.js?v=6" defer></script>
+  <script src="./two-statuses.js?v=6" defer></script>
+  <script src="./github-sync.js?v=6" defer></script>
+  <script src="./sync-button-fix.js?v=6" defer></script>
 </body>
 </html>
