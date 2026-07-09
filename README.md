@@ -1,30 +1,12 @@
 # TrackPack
 
-Applicazione mobile-first per salvare e gestire codici tracking dei pacchi.
+Applicazione mobile-first per salvare e gestire i codici tracking dei pacchi.
 
-## Funzioni
+- Funziona senza account, database o server
+- Salva i dati nel browser del dispositivo
+- Supporta ricerca, filtri, ordinamento, archivio e stato manuale
+- Include INPOST e precarica il codice `827049017600018049468336`
+- Apre il sito ufficiale del corriere quando disponibile
+- Può funzionare offline dopo il primo caricamento
 
-- Salvataggio locale nel browser, senza account o server
-- Gestione pacchi attivi e archiviati
-- Ricerca, filtri e ordinamento
-- Stato manuale della spedizione
-- Apertura del tracking ufficiale per i corrieri supportati
-- Supporto PWA e funzionamento offline dopo il primo caricamento
-- INPOST incluso, con il codice `827049017600018049468336` precaricato
-
-## Sviluppo locale
-
-```bash
-npm ci
-npm run dev
-```
-
-## Controlli
-
-```bash
-npm run check
-npm run lint
-npm run build
-```
-
-Il deploy su GitHub Pages avviene automaticamente con il workflow presente in `.github/workflows/deploy-pages.yml` dopo ogni push sul branch `main`.
+La cartella `site` contiene l’app pronta per GitHub Pages. Il deploy avviene automaticamente dal workflow `.github/workflows/deploy-pages.yml`.
