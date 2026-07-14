@@ -1,0 +1,54 @@
+name: Aggiorna tracking pacchi
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 */2 * * *"
+  push:
+    paths:
+      - "data/refresh-request.json"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: trackpack-tracking-update
+  cancel-in-progress: false
+
+jobs:
+  update-tracking:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Scarica repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Configura Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Installa Playwright
+        run: |
+          npm install --no-save playwright@1.52.0
+          npx playwright install --with-deps chromium
+
+      - name: Controlla i corrieri ufficiali
+        env:
+          TRACKPACK_PASSPHRASE: ${{ secrets.TRACKPACK_PASSPHRASE }}
+        run: node scripts/update-tracking.mjs
+
+      - name: Salva i risultati
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/packages.enc.json data/tracking-results.json
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da salvare"
+            exit 0
+          fi
+          git commit -m "Aggiorna stati tracking"
+          git push origin main
