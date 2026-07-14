@@ -9,9 +9,7 @@ const SUPPORTED = new Set(["INPOST", "POSTE ITALIANE", "SDA", "BRT", "GLS"]);
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
-if (!PASSPHRASE) {
-  throw new Error("Manca il secret TRACKPACK_PASSPHRASE.");
-}
+if (!PASSPHRASE) throw new Error("Manca il secret TRACKPACK_PASSPHRASE.");
 
 function normalizeCarrier(value) {
   return String(value || "").trim().replace(/\s+/g, " ").toUpperCase();
@@ -112,73 +110,137 @@ function officialUrls(carrier, code) {
 
 async function acceptCookies(page) {
   const labels = /accetta|accetto|consenti tutto|accetta tutti|accept all|continua senza accettare/i;
-  const buttons = page.getByRole("button", { name: labels });
-  for (let index = 0; index < Math.min(await buttons.count(), 4); index += 1) {
-    try {
-      const button = buttons.nth(index);
-      if (await button.isVisible()) {
-        await button.click({ timeout: 2500 });
-        return;
-      }
-    } catch {}
+  for (const frame of page.frames()) {
+    const buttons = frame.getByRole("button", { name: labels });
+    for (let index = 0; index < Math.min(await buttons.count().catch(() => 0), 5); index += 1) {
+      try {
+        const button = buttons.nth(index);
+        if (await button.isVisible()) {
+          await button.click({ timeout: 2500 });
+          return;
+        }
+      } catch {}
+    }
   }
 }
 
 async function selectCodeType(page, code) {
-  const selects = page.locator("select:visible");
-  for (let i = 0; i < await selects.count(); i += 1) {
-    const select = selects.nth(i);
-    try {
-      const options = await select.locator("option").evaluateAll((nodes) => nodes.map((node) => ({
-        value: node.value,
-        text: (node.textContent || "").trim()
-      })));
-      const wanted = /^\d{11}$/.test(code) ? /internazionale/i : /nazionale/i;
-      const choice = options.find((option) => option.value && wanted.test(option.text))
-        || options.find((option) => option.value && !/seleziona|scegli/i.test(option.text));
-      if (choice) await select.selectOption(choice.value);
-    } catch {}
+  for (const frame of page.frames()) {
+    const selects = frame.locator("select:visible");
+    for (let i = 0; i < await selects.count().catch(() => 0); i += 1) {
+      const select = selects.nth(i);
+      try {
+        const options = await select.locator("option").evaluateAll((nodes) => nodes.map((node) => ({
+          value: node.value,
+          text: (node.textContent || "").trim()
+        })));
+        const wanted = /^\d{11}$/.test(code) ? /internazionale/i : /nazionale/i;
+        const choice = options.find((option) => option.value && wanted.test(option.text))
+          || options.find((option) => option.value && !/seleziona|scegli/i.test(option.text));
+        if (choice) await select.selectOption(choice.value);
+      } catch {}
+    }
   }
 }
 
-async function fillTrackingForm(page, code) {
-  await selectCodeType(page, code);
-  const inputs = page.locator('input:visible:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="password"]):not([type="submit"])');
-  let best = null;
-  let bestScore = -1;
+function inputScore(meta, code, buttonBox = null) {
+  const attrs = `${meta.name} ${meta.id} ${meta.placeholder} ${meta.ariaLabel} ${meta.className}`.toLowerCase();
+  let score = 0;
+  if (/tracking|sped|pacco|codice|numero|parcel|lettera|vettura|riferimento|collo/.test(attrs)) score += 40;
+  if (/search|cerca|trova/.test(attrs)) score += 10;
+  if (meta.type === "search") score += 5;
+  if (/newsletter|email|mail|telefono|phone|nome|surname|search-site|site-search/.test(attrs)) score -= 50;
+  if (meta.maxLength && meta.maxLength >= code.length) score += 4;
+  if (buttonBox && meta.box) {
+    const vertical = buttonBox.y - (meta.box.y + meta.box.height);
+    const horizontal = Math.abs((buttonBox.x + buttonBox.width / 2) - (meta.box.x + meta.box.width / 2));
+    if (vertical >= -30 && vertical <= 500) score += Math.max(0, 30 - vertical / 20);
+    if (horizontal <= 300) score += Math.max(0, 12 - horizontal / 30);
+  }
+  return score;
+}
 
-  for (let i = 0; i < await inputs.count(); i += 1) {
-    const input = inputs.nth(i);
+async function findTrackingControls(frame, code) {
+  const buttons = frame.getByRole("button", { name: /^(?:trova|cerca|traccia|track|controlla)(?: il pacco)?$/i });
+  let best = null;
+
+  for (let b = 0; b < await buttons.count().catch(() => 0); b += 1) {
+    const button = buttons.nth(b);
     try {
-      const attrs = await input.evaluate((node) => [
-        node.name,
-        node.id,
-        node.placeholder,
-        node.getAttribute("aria-label"),
-        node.getAttribute("autocomplete")
-      ].filter(Boolean).join(" ").toLowerCase());
-      let score = 0;
-      if (/tracking|sped|pacco|codice|numero|parcel|lettera|vettura|riferimento|collo/.test(attrs)) score += 10;
-      if (/search|cerca/.test(attrs)) score += 4;
-      if ((await input.getAttribute("type")) === "search") score += 2;
-      if (score > bestScore) {
-        bestScore = score;
-        best = input;
+      if (!await button.isVisible()) continue;
+      const buttonBox = await button.boundingBox();
+      const form = button.locator("xpath=ancestor::form[1]");
+      const container = await form.count() ? form : button.locator("xpath=ancestor::*[self::section or self::div][1]");
+      const localInputs = container.locator('input:visible:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="password"]):not([type="submit"]):not([type="email"])');
+      for (let i = 0; i < await localInputs.count().catch(() => 0); i += 1) {
+        const input = localInputs.nth(i);
+        const meta = await input.evaluate((node) => ({
+          name: node.name || "",
+          id: node.id || "",
+          placeholder: node.placeholder || "",
+          ariaLabel: node.getAttribute("aria-label") || "",
+          className: node.className || "",
+          type: node.type || "",
+          maxLength: node.maxLength > 0 ? node.maxLength : 0
+        }));
+        meta.box = await input.boundingBox();
+        const score = inputScore(meta, code, buttonBox) + 60;
+        if (!best || score > best.score) best = { input, button, score };
       }
     } catch {}
   }
 
-  if (!best) return false;
-  await best.fill(code);
-
-  const submit = page.getByRole("button", { name: /cerca|invia|trova|track|ricerca|controlla/i }).first();
-  try {
-    if (await submit.isVisible()) await submit.click({ timeout: 5000 });
-    else await best.press("Enter");
-  } catch {
-    await best.press("Enter").catch(() => {});
+  const allInputs = frame.locator('input:visible:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="password"]):not([type="submit"]):not([type="email"])');
+  for (let i = 0; i < await allInputs.count().catch(() => 0); i += 1) {
+    const input = allInputs.nth(i);
+    try {
+      const meta = await input.evaluate((node) => ({
+        name: node.name || "",
+        id: node.id || "",
+        placeholder: node.placeholder || "",
+        ariaLabel: node.getAttribute("aria-label") || "",
+        className: node.className || "",
+        type: node.type || "",
+        maxLength: node.maxLength > 0 ? node.maxLength : 0
+      }));
+      meta.box = await input.boundingBox();
+      const score = inputScore(meta, code);
+      if (!best || score > best.score) best = { input, button: null, score };
+    } catch {}
   }
-  return true;
+
+  return best && best.score > 0 ? best : null;
+}
+
+async function fillTrackingForm(page, code, carrier) {
+  await selectCodeType(page, code);
+
+  for (const frame of page.frames()) {
+    const controls = await findTrackingControls(frame, code);
+    if (!controls) continue;
+
+    try {
+      await controls.input.scrollIntoViewIfNeeded();
+      await controls.input.click({ timeout: 5000 });
+      await controls.input.fill("");
+      await controls.input.type(code, { delay: 25 });
+      await controls.input.evaluate((node) => {
+        node.dispatchEvent(new Event("input", { bubbles: true }));
+        node.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+
+      if (controls.button) {
+        await controls.button.click({ timeout: 7000 });
+      } else {
+        await controls.input.press("Enter");
+      }
+      console.log(`${carrier}: form tracking compilato nel frame ${frame.url().split("?")[0]}`);
+      return true;
+    } catch (error) {
+      console.log(`${carrier}: tentativo form non riuscito (${error?.name || "errore"})`);
+    }
+  }
+  return false;
 }
 
 function cleanLines(text) {
@@ -187,7 +249,7 @@ function cleanLines(text) {
   return String(text || "")
     .split(/\r?\n/)
     .map((line) => line.replace(/\s+/g, " ").trim())
-    .filter((line) => line.length >= 3 && line.length <= 220)
+    .filter((line) => line.length >= 3 && line.length <= 240)
     .filter((line) => !ignored.test(line))
     .filter((line) => {
       const key = line.toLowerCase();
@@ -202,7 +264,7 @@ function detectResult(text, checkedAt) {
   const blocked = lines.find((line) => /captcha|access denied|forbidden|verifica di essere umano|non sei un robot|temporaneamente non disponibile/i.test(line));
   if (blocked) return { state: "unknown", label: "Controllo non disponibile", message: blocked, checkedAt };
 
-  const notFound = lines.find((line) => /nessuna spedizione|spedizione non trovata|codice non valido|non (?:è stato|e stato) trovato|non risulta|nessun risultato/i.test(line));
+  const notFound = lines.find((line) => /nessuna spedizione|spedizione non trovata|codice non valido|non (?:è stato|e stato) trovato|non risulta|nessun risultato|tracking non trovato/i.test(line));
   if (notFound) return { state: "unknown", label: "Non ancora rilevato", message: notFound, checkedAt };
 
   const delivered = lines.find((line) => {
@@ -212,19 +274,19 @@ function detectResult(text, checkedAt) {
   });
   if (delivered) return { state: "delivered", label: "Consegnato", message: delivered, checkedAt };
 
-  const exception = lines.find((line) => /mancata consegna|destinatario assente|in giacenza|anomalia|indirizzo errato|reso al mittente|problema nella consegna/i.test(line));
+  const exception = lines.find((line) => /mancata consegna|destinatario assente|in giacenza|anomalia|indirizzo errato|reso al mittente|problema nella consegna|danneggiat/i.test(line));
   if (exception) return { state: "exception", label: "Attenzione richiesta", message: exception, checkedAt };
 
   const outForDelivery = lines.find((line) => /\bin consegna\b|in fase di consegna|affidat[oa] al corriere per la consegna|out for delivery/i.test(line));
   if (outForDelivery) return { state: "out_for_delivery", label: "In consegna", message: outForDelivery, checkedAt };
 
-  const inTransit = lines.find((line) => /\bin transito\b|\bin lavorazione\b|\bin trasferimento\b|presa in carico|ritirat[oa] dal mittente|accettat[oa] dal corriere|partit[oa] dal|arrivat[oa] (?:al|presso)|spedizione in viaggio/i.test(line));
+  const inTransit = lines.find((line) => /\bin transito\b|\bin lavorazione\b|\bin trasferimento\b|presa in carico|ritirat[oa] dal mittente|accettat[oa] dal corriere|partit[oa] dal|arrivat[oa] (?:al|presso)|spedizione in viaggio|sorting|hub/i.test(line));
   if (inTransit) return { state: "in_transit", label: "In transito", message: inTransit, checkedAt };
 
-  const created = lines.find((line) => /spedizione creata|etichetta creata|dati della spedizione|informazioni ricevute|preavviso di spedizione/i.test(line));
+  const created = lines.find((line) => /spedizione creata|etichetta creata|dati della spedizione|informazioni ricevute|preavviso di spedizione|label created/i.test(line));
   if (created) return { state: "label_created", label: "Spedizione registrata", message: created, checkedAt };
 
-  const informative = lines.find((line) => /spedizione|pacco|tracking|consegna|transito/i.test(line));
+  const informative = lines.find((line) => /spedizione|pacco|tracking|consegna|transito|locker|point/i.test(line));
   return {
     state: "unknown",
     label: "Stato non determinato",
@@ -233,23 +295,133 @@ function detectResult(text, checkedAt) {
   };
 }
 
+function walkJson(value, path = "", output = []) {
+  if (value === null || value === undefined || output.length > 500) return output;
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => walkJson(item, `${path}[${index}]`, output));
+    return output;
+  }
+  if (typeof value === "object") {
+    for (const [key, item] of Object.entries(value)) {
+      const nextPath = path ? `${path}.${key}` : key;
+      if (["status", "state", "description", "message", "event", "eventDescription", "label", "details", "history", "tracking_details", "events"].some((needle) => key.toLowerCase().includes(needle.toLowerCase()))) {
+        if (typeof item === "string" || typeof item === "number") output.push(`${nextPath}: ${item}`);
+      }
+      walkJson(item, nextPath, output);
+    }
+  }
+  return output;
+}
+
+function resultFromJson(value, checkedAt) {
+  const lines = walkJson(value).slice(0, 250);
+  if (!lines.length) return null;
+  const detected = detectResult(lines.join("\n"), checkedAt);
+  return detected.state !== "unknown" ? detected : null;
+}
+
+function safeNetworkUrl(url, code) {
+  return String(url || "").replaceAll(code, "[tracking]").split("#")[0].slice(0, 240);
+}
+
+async function inspectInpostPage(context, code) {
+  const checkedAt = new Date().toISOString();
+  const page = await context.newPage();
+  const networkResults = [];
+  const networkLog = [];
+
+  page.on("response", async (response) => {
+    const url = response.url();
+    const contentType = String(response.headers()["content-type"] || "");
+    const interesting = /track|parcel|shipment|sped|pacco|consignment|delivery|event/i.test(url);
+    if (!interesting && !contentType.includes("json")) return;
+    try {
+      const body = contentType.includes("json") ? await response.json() : null;
+      if (body) {
+        const result = resultFromJson(body, checkedAt);
+        if (result) networkResults.push(result);
+        networkLog.push(`${response.status()} ${safeNetworkUrl(url, code)} keys=${Object.keys(body || {}).slice(0, 12).join(",")}`);
+      }
+    } catch {}
+  });
+
+  try {
+    await page.goto("https://inpost.it/trova-il-tuo-pacco", { waitUntil: "domcontentloaded", timeout: 50000 });
+    await acceptCookies(page);
+    await page.waitForTimeout(1800);
+
+    const submitted = await fillTrackingForm(page, code, "INPOST");
+    if (!submitted) console.log("INPOST: nessun campo tracking affidabile trovato");
+
+    await page.waitForTimeout(7000);
+    await page.waitForLoadState("networkidle", { timeout: 12000 }).catch(() => {});
+
+    for (const line of networkLog.slice(-12)) console.log(`INPOST rete: ${line}`);
+    if (networkResults.length) {
+      const result = networkResults.at(-1);
+      result.sourceUrl = page.url();
+      result.carrier = "INPOST";
+      return result;
+    }
+
+    const frameTexts = [];
+    for (const frame of page.frames()) {
+      try {
+        const text = await frame.locator("body").innerText({ timeout: 8000 });
+        if (text) frameTexts.push(text);
+      } catch {}
+    }
+    const result = detectResult(frameTexts.join("\n"), checkedAt);
+    result.sourceUrl = page.url();
+    result.carrier = "INPOST";
+
+    if (result.state === "unknown" && !submitted) {
+      result.label = "Form InPost non rilevato";
+      result.message = "La pagina InPost non ha esposto un campo tracking utilizzabile dall’automazione.";
+    }
+    return result;
+  } catch (error) {
+    return {
+      state: "unknown",
+      label: "Controllo InPost non riuscito",
+      message: error?.name === "TimeoutError"
+        ? "Il sito InPost non ha completato il caricamento entro il tempo previsto."
+        : "Il sito InPost non ha risposto correttamente.",
+      checkedAt,
+      carrier: "INPOST",
+      sourceUrl: "https://inpost.it/trova-il-tuo-pacco"
+    };
+  } finally {
+    await page.close().catch(() => {});
+  }
+}
+
 async function inspectOfficialPage(context, carrier, code) {
+  if (carrier === "INPOST") return inspectInpostPage(context, code);
+
   const checkedAt = new Date().toISOString();
   let lastError = null;
+  const candidates = officialUrls(carrier, code);
 
-  for (const candidate of officialUrls(carrier, code)) {
+  for (const candidate of candidates) {
     const page = await context.newPage();
     try {
       await page.goto(candidate.url, { waitUntil: "domcontentloaded", timeout: 45000 });
       await acceptCookies(page);
-      if (candidate.fill) await fillTrackingForm(page, code);
+      if (candidate.fill) await fillTrackingForm(page, code, carrier);
       await page.waitForTimeout(4500);
       await page.waitForLoadState("networkidle", { timeout: 8000 }).catch(() => {});
-      const text = await page.locator("body").innerText({ timeout: 10000 });
-      const result = detectResult(text, checkedAt);
+      const texts = [];
+      for (const frame of page.frames()) {
+        try {
+          const text = await frame.locator("body").innerText({ timeout: 5000 });
+          if (text) texts.push(text);
+        } catch {}
+      }
+      const result = detectResult(texts.join("\n"), checkedAt);
       result.sourceUrl = page.url();
       result.carrier = carrier;
-      if (result.state !== "unknown" || candidate === officialUrls(carrier, code).at(-1)) return result;
+      if (result.state !== "unknown" || candidate === candidates.at(-1)) return result;
     } catch (error) {
       lastError = error;
     } finally {
@@ -260,10 +432,12 @@ async function inspectOfficialPage(context, carrier, code) {
   return {
     state: "unknown",
     label: "Controllo non riuscito",
-    message: lastError?.message?.slice(0, 180) || "Il sito ufficiale non ha risposto.",
+    message: lastError?.name === "TimeoutError"
+      ? "Il sito del corriere non ha completato il caricamento."
+      : "Il sito del corriere non ha risposto correttamente.",
     checkedAt,
     carrier,
-    sourceUrl: officialUrls(carrier, code)[0]?.url || ""
+    sourceUrl: candidates[0]?.url || ""
   };
 }
 
@@ -279,7 +453,11 @@ const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({
   locale: "it-IT",
   timezoneId: "Europe/Rome",
-  userAgent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/126 Safari/537.36 TrackPack/1.0"
+  userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+  viewport: { width: 1440, height: 1100 },
+  extraHTTPHeaders: {
+    "Accept-Language": "it-IT,it;q=0.9,en;q=0.7"
+  }
 });
 
 try {
