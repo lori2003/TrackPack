@@ -1,0 +1,99 @@
+{
+  "checkedAt": "2026-07-14T08:07:43.803Z",
+  "finalUrl": "https://inpost.it/trova-il-tuo-pacco",
+  "title": "Ci siamo quasi…",
+  "frames": [
+    {
+      "url": "https://inpost.it/trova-il-tuo-pacco",
+      "error": "locator.evaluateAll: ReferenceError: safeUrl is not defined\n    at eval (eval at evaluate (:313:29), <anonymous>:1:32)\n    at Array.map (<anonymous>)\n    at eval (eval at evaluate (:313:29), <anonymous>:1:18)\n    at UtilityScript.evaluate (<anonymous>:315:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)"
+    },
+    {
+      "url": "https://challenges.cloudflare.com/cdn-cgi/challenge-platform/h/b/turnstile/f/av0/rch/x2iwv/0x4AAAAAAADnPIDROrmt1Wwj/light/fbE/new/normal",
+      "inputs": [],
+      "buttons": [],
+      "forms": 0,
+      "iframes": [],
+      "scripts": []
+    }
+  ],
+  "deepElements": [
+    {
+      "tag": "input",
+      "id": "cf-chl-widget-x2iwv_response",
+      "className": "",
+      "type": "hidden",
+      "name": "cf-turnstile-response",
+      "placeholder": "",
+      "ariaLabel": "",
+      "text": "",
+      "hasShadowRoot": false
+    }
+  ],
+  "requests": [
+    {
+      "method": "GET",
+      "type": "document",
+      "url": "https://inpost.it/trova-il-tuo-pacco"
+    },
+    {
+      "method": "GET",
+      "type": "script",
+      "url": "https://inpost.it/cdn-cgi/challenge-platform/h/b/orchestrate/chl_page/v1"
+    },
+    {
+      "method": "GET",
+      "type": "script",
+      "url": "blob:https://inpost.it/4dde1fbe-c85d-43a0-8a1e-b98e4c99e8b2"
+    },
+    {
+      "method": "GET",
+      "type": "script",
+      "url": "https://challenges.cloudflare.com/turnstile/v0/b/3104729c556c/api.js"
+    },
+    {
+      "method": "POST",
+      "type": "xhr",
+      "url": "https://inpost.it/cdn-cgi/challenge-platform/h/b/fo/4178720431:1784012526:pBQNFzTerG82CpTHESRxLk4vfaRdAX4_WUfwS5GPQtM/a1af08d38e5a1ffb/tVOzrQKmmdH2KXNkKfR7J7.hdwEADGhaQ.81qO6vXlM-1784016453-1.2.1.1-c7zHy7uGPrXKcrhI1LUydEU7YfaGoB3.yQI6RDkDjODhiStU6SF8FClCqESKG8wY"
+    },
+    {
+      "method": "GET",
+      "type": "script",
+      "url": "blob:https://inpost.it/c3f1966d-cf13-49ea-aac9-8837b78f4802"
+    },
+    {
+      "method": "GET",
+      "type": "document",
+      "url": "https://challenges.cloudflare.com/cdn-cgi/challenge-platform/h/b/turnstile/f/av0/rch/x2iwv/0x4AAAAAAADnPIDROrmt1Wwj/light/fbE/new/normal"
+    },
+    {
+      "method": "GET",
+      "type": "script",
+      "url": "blob:https://challenges.cloudflare.com/709a776c-40e2-4f82-865b-a612608237df"
+    },
+    {
+      "method": "POST",
+      "type": "xhr",
+      "url": "https://challenges.cloudflare.com/cdn-cgi/challenge-platform/h/b/fo/3506577193:1784012528:K0LIxdsEzUWMDSQTwfjCXkp7pJeuZwvBFWYlt9hajfI/a1af08d5c8e45cfd/SO5geZZsItYdvSP_rJ47QlO_lODgmMtYauDBth3cezM-1784016454-1.2.1.1-mAf_k_OgvjKBVJVWhbU3M5nPf2X3Ax2GhI6IpfNxmAxTniPa4frdowML0Y9HiG1x"
+    },
+    {
+      "method": "GET",
+      "type": "script",
+      "url": "blob:https://challenges.cloudflare.com/bbd006db-fa45-40fa-9e89-85f49f0dc2a3"
+    },
+    {
+      "method": "GET",
+      "type": "fetch",
+      "url": "https://brunhild.challenges.cloudflare.com/cdn-cgi/challenge-platform/h/b/i/a1af08d5c8e45cfd/SO5geZZsItYdvSP_rJ47QlO_lODgmMtYauDBth3cezM-1784016454-1.2.1.1-mAf_k_OgvjKBVJVWhbU3M5nPf2X3Ax2GhI6IpfNxmAxTniPa4frdowML0Y9HiG1x"
+    },
+    {
+      "method": "GET",
+      "type": "fetch",
+      "url": "https://challenges.cloudflare.com/cdn-cgi/challenge-platform/h/b/pat/a1af08d5c8e45cfd/1784016454313/1cc61bc9634368da6da2caeb366416706e45915fd6e86366107b7042c721783c/vqTEw7jNsZpPwZh"
+    },
+    {
+      "method": "GET",
+      "type": "script",
+      "url": "blob:https://challenges.cloudflare.com/31c9139e-79de-48b2-a4d6-2d28995c5b1e"
+    }
+  ]
+}
