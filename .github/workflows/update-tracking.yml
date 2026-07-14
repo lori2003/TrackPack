@@ -36,6 +36,9 @@ jobs:
           npm install --no-save playwright@1.52.0
           npx playwright install --with-deps chromium
 
+      - name: Analizza la struttura InPost
+        run: node scripts/debug-inpost.mjs
+
       - name: Controlla i corrieri ufficiali
         env:
           TRACKPACK_PASSPHRASE: ${{ secrets.TRACKPACK_PASSPHRASE }}
@@ -48,7 +51,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/packages.enc.json data/tracking-results.json
+          git add data/packages.enc.json data/tracking-results.json data/inpost-debug.json
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare"
             exit 0
