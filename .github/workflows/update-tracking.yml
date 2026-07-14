@@ -36,13 +36,13 @@ jobs:
           npm install --no-save playwright@1.52.0
           npx playwright install --with-deps chromium
 
-      - name: Analizza la struttura InPost
-        run: node scripts/debug-inpost.mjs
-
-      - name: Controlla i corrieri ufficiali
+      - name: Controlla Poste, SDA, BRT e GLS
         env:
           TRACKPACK_PASSPHRASE: ${{ secrets.TRACKPACK_PASSPHRASE }}
-        run: node scripts/update-tracking.mjs
+        run: |
+          sed 's/const SUPPORTED = new Set(\["INPOST", /const SUPPORTED = new Set([/' scripts/update-tracking.mjs > scripts/update-other-carriers.tmp.mjs
+          node scripts/update-other-carriers.tmp.mjs
+          rm scripts/update-other-carriers.tmp.mjs
 
       - name: Aggiorna InPost tramite API Italia
         env:
@@ -56,7 +56,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/packages.enc.json data/tracking-results.json data/inpost-debug.json
+          git add data/packages.enc.json data/tracking-results.json
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare"
             exit 0
