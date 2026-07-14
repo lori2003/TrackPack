@@ -7,7 +7,7 @@ const results = payload?.results && typeof payload.results === "object" ? payloa
 function sanitizeMessage(value) {
   return String(value || "")
     .replace(/https?:\/\/\S+/gi, "[link rimosso]")
-    .replace(/\b[A-Z0-9._-]{8,}\b/gi, "[codice rimosso]")
+    .replace(/\b(?=[A-Z0-9._-]{8,}\b)(?=[A-Z0-9._-]*\d)[A-Z0-9._-]+\b/gi, "[codice rimosso]")
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 180);
