@@ -11,7 +11,8 @@
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./icon.svg">
-  <link rel="stylesheet" href="./app.css?v=minimal1">
+  <link rel="stylesheet" href="./app.css?v=minimal2">
+  <link rel="stylesheet" href="./tracking-status.css?v=minimal2">
   <title>TrackPack</title>
 </head>
 <body>
@@ -25,7 +26,7 @@
         </div>
       </div>
       <div class="header-actions">
-        <button id="forceRefreshButton" class="refresh-button" type="button" aria-label="Carica l'ultima versione di TrackPack" title="Carica l'ultima versione">
+        <button id="forceRefreshButton" class="refresh-button" type="button" aria-label="Aggiorna tracking e carica l'ultima versione di TrackPack" title="Aggiorna tracking e applicazione">
           <span class="refresh-icon" aria-hidden="true">↻</span>
           <span class="refresh-label">Aggiorna</span>
         </button>
@@ -183,8 +184,9 @@
     <div class="empty-state"><div aria-hidden="true">▣</div><h2>Nessun pacco</h2><p></p></div>
   </template>
 
-  <script src="./refresh-tools.js?v=minimal1"></script>
-  <script src="./app.js?v=minimal1" defer></script>
-  <script src="./tracking-links.js?v=minimal1" defer></script>
+  <script src="./refresh-tools.js?v=minimal2"></script>
+  <script src="./app.js?v=minimal2" defer></script>
+  <script src="./tracking-status.js?v=minimal2" defer></script>
+  <script src="./tracking-links.js?v=minimal2" defer></script>
 </body>
 </html>
