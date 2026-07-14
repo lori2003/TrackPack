@@ -19,7 +19,7 @@
 
   async function resultKey(carrier, code) {
     const data = new TextEncoder().encode(`${normalize(carrier)}:${normalize(code).replace(/\s+/g, "")}`);
-    const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", data));
+    const digest = new Uint8Array(await globalThis.crypto.subtle.digest("SHA-256", data));
     return [...digest].map((byte) => byte.toString(16).padStart(2, "0")).join("");
   }
 
@@ -86,8 +86,21 @@
     meta.querySelector(".tracking-result-row")?.remove();
     const row = document.createElement("div");
     row.className = "meta-row tracking-result-row";
+
+    const icon = document.createElement("span");
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent = "↻";
+
+    const text = document.createElement("span");
+    const strong = document.createElement("strong");
+    strong.textContent = result.label || "Stato non determinato";
+    text.appendChild(strong);
+
     const checked = formatCheckedAt(result.checkedAt);
-    row.innerHTML = `<span aria-hidden="true">↻</span><span><strong>${result.label || "Stato non determinato"}</strong>${result.message ? ` · ${result.message}` : ""}${checked ? ` · ${checked}` : ""}</span>`;
+    const details = [result.message, checked].filter(Boolean).join(" · ");
+    if (details) text.appendChild(document.createTextNode(` · ${details}`));
+
+    row.append(icon, text);
     meta.appendChild(row);
 
     if (state === "delivered" && markDeliveredLocally(card.dataset.id, result.checkedAt)) {
@@ -107,7 +120,7 @@
   }
 
   async function applyResults() {
-    if (!crypto?.subtle) return;
+    if (!globalThis.crypto?.subtle) return;
     const results = await loadResults();
     const cards = [...document.querySelectorAll(".package-card[data-id]")];
 
