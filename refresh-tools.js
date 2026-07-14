@@ -13,8 +13,8 @@
       const packages = JSON.parse(raw);
       if (!Array.isArray(packages)) return false;
 
-      let changed = false;
       const now = new Date().toISOString();
+      let changed = false;
       const updated = packages.map((pkg) => {
         if (!pkg || typeof pkg !== "object") return pkg;
         const delivered = String(pkg.status || "").toLowerCase() === "delivered";
@@ -30,56 +30,56 @@
       localStorage.setItem(UPDATED_KEY, now);
       return true;
     } catch (error) {
-      console.warn("Impossibile archiviare i pacchi consegnati", error);
+      console.warn("Archiviazione automatica non riuscita", error);
       return false;
     }
   }
 
-  function addRefreshButton() {
-    const host = document.querySelector(".header-actions");
-    if (!host || document.getElementById("forceRefreshButton")) return;
+  async function clearTrackPackCache() {
+    if ("serviceWorker" in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations
+        .filter((registration) => registration.scope.includes("/TrackPack/"))
+        .map((registration) => registration.unregister()));
+    }
 
-    const button = document.createElement("button");
-    button.id = "forceRefreshButton";
-    button.type = "button";
-    button.className = "icon-button";
-    button.setAttribute("aria-label", "Aggiorna forzatamente TrackPack");
-    button.title = "Aggiorna forzatamente";
-    button.textContent = "↻";
-    button.style.width = "36px";
-    button.style.height = "36px";
-    button.style.fontSize = "22px";
-    button.style.flex = "0 0 auto";
+    if ("caches" in window) {
+      const names = await caches.keys();
+      await Promise.all(names.map((name) => caches.delete(name)));
+    }
+  }
 
-    button.addEventListener("click", async () => {
-      button.disabled = true;
-      button.textContent = "⟳";
-      button.style.animation = "trackpack-spin .8s linear infinite";
+  async function forceLatestVersion(button) {
+    if (!button || button.disabled) return;
 
-      archiveDeliveredPackages();
+    button.disabled = true;
+    button.classList.add("is-refreshing");
+    button.setAttribute("aria-busy", "true");
+    const label = button.querySelector(".refresh-label");
+    if (label) label.textContent = "Aggiorno…";
 
-      try {
-        if ("serviceWorker" in navigator) {
-          const registrations = await navigator.serviceWorker.getRegistrations();
-          await Promise.all(registrations
-            .filter((registration) => registration.scope.includes("/TrackPack/"))
-            .map((registration) => registration.unregister()));
-        }
+    archiveDeliveredPackages();
 
-        if ("caches" in window) {
-          const names = await caches.keys();
-          await Promise.all(names.map((name) => caches.delete(name)));
-        }
-      } catch (error) {
-        console.warn("Pulizia cache non completata", error);
-      }
+    try {
+      await clearTrackPackCache();
+      const freshIndex = new URL("./index.html", location.href);
+      freshIndex.searchParams.set("cache", Date.now().toString());
+      await fetch(freshIndex, { cache: "reload" }).catch(() => null);
+    } catch (error) {
+      console.warn("Pulizia cache non completata", error);
+    }
 
-      const url = new URL(location.href);
-      url.searchParams.set("refresh", Date.now().toString());
-      location.replace(url.toString());
-    });
+    const url = new URL(location.href);
+    url.search = "";
+    url.hash = "";
+    url.searchParams.set("version", Date.now().toString());
+    location.replace(url.toString());
+  }
 
-    host.prepend(button);
+  function bindRefreshButton() {
+    const button = document.getElementById("forceRefreshButton");
+    if (!button) return;
+    button.addEventListener("click", () => forceLatestVersion(button));
   }
 
   function scheduleReloadIfNeeded() {
@@ -88,9 +88,7 @@
     const activeTab = document.querySelector('.tab[data-view="active"].active');
     const deliveredVisible = document.querySelector(".package-card.delivered");
     if (!activeTab || !deliveredVisible) return;
-
-    const changed = archiveDeliveredPackages();
-    if (!changed) return;
+    if (!archiveDeliveredPackages()) return;
 
     reloadScheduled = true;
     setTimeout(() => location.reload(), 250);
@@ -99,20 +97,15 @@
   function watchDeliveredPackages() {
     const list = document.getElementById("packageList");
     if (!list) return;
-
     const observer = new MutationObserver(scheduleReloadIfNeeded);
     observer.observe(list, { childList: true, subtree: true });
     scheduleReloadIfNeeded();
   }
 
-  const style = document.createElement("style");
-  style.textContent = "@keyframes trackpack-spin{to{transform:rotate(360deg)}}";
-  document.head.appendChild(style);
-
   archiveDeliveredPackages();
 
   document.addEventListener("DOMContentLoaded", () => {
-    addRefreshButton();
+    bindRefreshButton();
     watchDeliveredPackages();
   });
 })();
