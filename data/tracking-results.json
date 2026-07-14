@@ -1,19 +1,19 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-14T07:54:44.010Z",
+  "updatedAt": "2026-07-14T08:04:30.047Z",
   "results": {
     "bb13cabcbcea2bf5d87cc2e71a7d0a3cf439eb747fffbe2b03e74956005c3ede": {
       "state": "unknown",
-      "label": "Controllo non riuscito",
-      "message": "Il sito [codice rimosso] non ha [codice rimosso].",
-      "checkedAt": "2026-07-14T07:54:18.434Z",
+      "label": "Form InPost non rilevato",
+      "message": "La pagina InPost non ha esposto un campo tracking utilizzabile dall’automazione.",
+      "checkedAt": "2026-07-14T08:03:47.640Z",
       "carrier": "INPOST"
     },
     "4ef53d1c8433d6520ff1711f359de17f3ce81bb3ff7195254522bdbc03e40274": {
       "state": "unknown",
-      "label": "Controllo non riuscito",
-      "message": "Il sito [codice rimosso] non ha [codice rimosso].",
-      "checkedAt": "2026-07-14T07:54:31.335Z",
+      "label": "Form InPost non rilevato",
+      "message": "La pagina InPost non ha esposto un campo tracking utilizzabile dall’automazione.",
+      "checkedAt": "2026-07-14T08:04:09.085Z",
       "carrier": "INPOST"
     }
   }
