@@ -41,6 +41,9 @@ jobs:
           TRACKPACK_PASSPHRASE: ${{ secrets.TRACKPACK_PASSPHRASE }}
         run: node scripts/update-tracking.mjs
 
+      - name: Rimuovi dati sensibili dai risultati pubblici
+        run: node scripts/sanitize-tracking-results.mjs
+
       - name: Salva i risultati
         run: |
           git config user.name "github-actions[bot]"
