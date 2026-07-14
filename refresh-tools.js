@@ -3,7 +3,65 @@
 
   const STORAGE_KEY = "trackpack.packages.v3";
   const UPDATED_KEY = "trackpack.local.updatedAt";
+  const TOKEN_KEY = "trackpack.github.token";
+  const REFRESH_FILE = "data/refresh-request.json";
+  const GITHUB_API = "https://api.github.com/repos/lori2003/TrackPack";
   let reloadScheduled = false;
+
+  function getToken() {
+    return sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY) || "";
+  }
+
+  function githubHeaders(token) {
+    return {
+      Accept: "application/vnd.github+json",
+      Authorization: `Bearer ${token}`,
+      "X-GitHub-Api-Version": "2022-11-28"
+    };
+  }
+
+  function utf8ToBase64(value) {
+    const bytes = new TextEncoder().encode(value);
+    let binary = "";
+    for (let index = 0; index < bytes.length; index += 0x8000) {
+      binary += String.fromCharCode(...bytes.subarray(index, index + 0x8000));
+    }
+    return btoa(binary);
+  }
+
+  async function requestTrackingUpdate(retry = true) {
+    const token = getToken();
+    if (!token) return false;
+
+    const endpoint = `${GITHUB_API}/contents/${REFRESH_FILE}`;
+    const currentResponse = await fetch(`${endpoint}?ref=main&t=${Date.now()}`, {
+      headers: githubHeaders(token),
+      cache: "no-store"
+    });
+
+    let current = null;
+    if (currentResponse.ok) current = await currentResponse.json();
+    else if (currentResponse.status !== 404) throw new Error(`GitHub ${currentResponse.status}`);
+
+    const requestedAt = new Date().toISOString();
+    const body = {
+      message: `Richiesta aggiornamento tracking ${requestedAt}`,
+      content: utf8ToBase64(JSON.stringify({ requestedAt, source: "github-pages" }, null, 2)),
+      branch: "main"
+    };
+    if (current?.sha) body.sha = current.sha;
+
+    const response = await fetch(endpoint, {
+      method: "PUT",
+      headers: { ...githubHeaders(token), "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+
+    if (response.status === 409 && retry) return requestTrackingUpdate(false);
+    if (!response.ok) throw new Error(`GitHub ${response.status}`);
+    sessionStorage.setItem("trackpack.tracking.refreshRequestedAt", requestedAt);
+    return true;
+  }
 
   function archiveDeliveredPackages() {
     try {
@@ -56,11 +114,18 @@
     button.classList.add("is-refreshing");
     button.setAttribute("aria-busy", "true");
     const label = button.querySelector(".refresh-label");
-    if (label) label.textContent = "Aggiorno…";
 
     archiveDeliveredPackages();
 
     try {
+      if (label) label.textContent = "Controllo…";
+      await requestTrackingUpdate();
+    } catch (error) {
+      console.warn("Richiesta tracking non avviata", error);
+    }
+
+    try {
+      if (label) label.textContent = "Aggiorno…";
       await clearTrackPackCache();
       const freshIndex = new URL("./index.html", location.href);
       freshIndex.searchParams.set("cache", Date.now().toString());
