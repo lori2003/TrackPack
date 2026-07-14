@@ -31,7 +31,7 @@
 
   async function requestTrackingUpdate(retry = true) {
     const token = getToken();
-    if (!token) return false;
+    if (!token) return { ok: false, reason: "missing-token" };
 
     const endpoint = `${GITHUB_API}/contents/${REFRESH_FILE}`;
     const currentResponse = await fetch(`${endpoint}?ref=main&t=${Date.now()}`, {
@@ -59,8 +59,9 @@
 
     if (response.status === 409 && retry) return requestTrackingUpdate(false);
     if (!response.ok) throw new Error(`GitHub ${response.status}`);
+
     sessionStorage.setItem("trackpack.tracking.refreshRequestedAt", requestedAt);
-    return true;
+    return { ok: true, requestedAt };
   }
 
   function archiveDeliveredPackages() {
@@ -166,6 +167,12 @@
     observer.observe(list, { childList: true, subtree: true });
     scheduleReloadIfNeeded();
   }
+
+  globalThis.TrackPackRefresh = Object.freeze({
+    requestTrackingUpdate,
+    getToken,
+    clearTrackPackCache
+  });
 
   archiveDeliveredPackages();
 
