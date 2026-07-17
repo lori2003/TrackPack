@@ -1,12 +1,12 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-17T03:36:40.210Z",
+  "updatedAt": "2026-07-17T06:27:31.787Z",
   "results": {
     "bb13cabcbcea2bf5d87cc2e71a7d0a3cf439eb747fffbe2b03e74956005c3ede": {
       "state": "label_created",
       "label": "Spedizione confermata",
       "message": "Spedizione confermata · 07 lug, 20:48",
-      "checkedAt": "2026-07-17T03:36:38.771Z",
+      "checkedAt": "2026-07-17T06:27:30.798Z",
       "carrier": "INPOST"
     },
     "4ef53d1c8433d6520ff1711f359de17f3ce81bb3ff7195254522bdbc03e40274": {
