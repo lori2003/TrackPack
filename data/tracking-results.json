@@ -1,12 +1,12 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-21T21:33:00.739Z",
+  "updatedAt": "2026-07-21T23:11:12.772Z",
   "results": {
     "bb13cabcbcea2bf5d87cc2e71a7d0a3cf439eb747fffbe2b03e74956005c3ede": {
       "state": "in_transit",
       "label": "Presa in carico",
       "message": "Presa in carico · 21 lug, 16:06",
-      "checkedAt": "2026-07-21T21:32:59.659Z",
+      "checkedAt": "2026-07-21T23:11:11.639Z",
       "carrier": "INPOST"
     },
     "4ef53d1c8433d6520ff1711f359de17f3ce81bb3ff7195254522bdbc03e40274": {
